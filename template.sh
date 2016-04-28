@@ -11,45 +11,52 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
-
 user=""
-cmd=""
-
+exec=""
 name=`basename $0`
-pid_file="/var/run/$name.pid"
+
+pidfile="/var/run/squirro/youtube/youtubed.pid"
 lockfile="/var/lock/subsys/$name"
 
-get_pid() {
-    cat "$pid_file"
-}
-
 is_running() {
-    [ -f "$pid_file" ] && ps `get_pid` > /dev/null 2>&1
+    if [[ -f "$pidfile" ]]; then
+	ps `cat $pidfile` > /dev/null 2>&1
+	return  0
+     else
+        return 1
+     fi
 }
 
 start() {
+
+  [ -x $exec ] || exit 5
+
   if is_running; then
       echo "Already started"
   else
-      echo "Starting $name"
+      echo -n "Starting $name"
       daemon --user $user "$exec $pidfile"
       retval=$?
 
+      [ $retval -eq 0 ] && touch $lockfile
+
+      sleep 0.30
+
       if ! is_running; then
-          echo "Unable to start, see $stdout_log and $stderr_log"
+          echo "Unable to start"
           exit 1
       fi
 
       touch $lockfile
-      return $retval
   fi
+  echo ""
+  return $retval
 }
 
 stop() {
-
   if is_running; then
       echo -n "Stopping $name.."
-      killproc -p $pidfile -d 10 $name
+      killproc -p $pidfile -d 10 $exec
       retval=$?
 
       for i in {1..10}
@@ -68,15 +75,14 @@ stop() {
           exit 1
       else
           echo "Stopped"
-          if [ -f "$pid_file" ]; then
-              rm "$pid_file"
+          if [ -f "$pidfile" ]; then
+              rm "$pidfile"
               rm "$lockfle"
           fi
       fi
   else
       echo "Not running"
   fi
-
   return $retval
 }
 
@@ -103,20 +109,22 @@ reload() {
 }
 
 rh_status() {
+    echo status
     status -p $pidfile $name
 }
 
 rh_status_q() {
-    rh_status >/dev/null 2>&1
+   rh_status >/dev/null 2>&1
 }
 
 case "$1" in
     start)
+      start
       rh_status_q && exit 0
       $1
       ;;
     stop)
-      rh_status_q && exit 0
+      rh_status_q || exit 0
       $1
       ;;
     restart)
