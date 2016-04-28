@@ -17,6 +17,7 @@ cmd=""
 
 name=`basename $0`
 pid_file="/var/run/$name.pid"
+lockfile="/var/lock/subsys/$name"
 
 get_pid() {
     cat "$pid_file"
@@ -39,6 +40,7 @@ start() {
           exit 1
       fi
 
+      touch $lockfile
       return $retval
   fi
 }
@@ -68,6 +70,7 @@ stop() {
           echo "Stopped"
           if [ -f "$pid_file" ]; then
               rm "$pid_file"
+              rm "$lockfle"
           fi
       fi
   else
