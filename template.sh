@@ -11,11 +11,14 @@
 # Source function library.
 . /etc/rc.d/init.d/functions
 
+#enable python27
+#. /opt/rh/python27/enable 
+
 user=""
 exec=""
 name=`basename $0`
 
-pidfile="/var/run/squirro/youtube/youtubed.pid"
+pidfile="/var/run/$name.pid"
 lockfile="/var/lock/subsys/$name"
 
 is_running() {
